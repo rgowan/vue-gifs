@@ -5,7 +5,10 @@
 
       <div class="banner">
         <div>
-          <p v-if="!noGifs">Currently Viewing: <span v-if="!current">trending</span> <span v-else>{{ current }}</span> gifs</p>
+          <p v-if="!noGifs">Currently Viewing:
+            <span v-if="!current">trending</span>
+            <span v-else>{{ current }}</span> gifs
+          </p>
         </div>
 
         <form v-on:submit.prevent="getQueryGifs">
@@ -21,6 +24,8 @@
       </li>
     </ul>
 
+    <button class="load-more" v-on:click="loadMore">See More</button>
+
     <div v-if="noGifs" class="error">
       <i class="fas fa-times-circle"></i>
       <p>Oh no, seems like there are no gifs that match your search</p>
@@ -35,6 +40,7 @@ export default {
   data () {
     return {
       gifs: [],
+      offset: 0,
       query: '',
       current: '',
       noGifs: false,
@@ -47,15 +53,18 @@ export default {
   methods: {
     getTredningGifs () {
       this.current = ''
-
       axios
-        .get('http://api.giphy.com/v1/gifs/trending?api_key=V71aYiBc9MNocrdCDU9dv5uhOh0sn2FT&limit=9')
+        .get(`http://api.giphy.com/v1/gifs/trending?api_key=V71aYiBc9MNocrdCDU9dv5uhOh0sn2FT&limit=12&offset=${this.offset}`)
         .then(this.handleGifData)
     },
     getQueryGifs () {
       if (this.query.length > 0) {
+        if (this.query !== this.current) {
+          this.gifs = []
+          this.offset = 0
+        }
         axios
-          .get(`http://api.giphy.com/v1/gifs/search?api_key=V71aYiBc9MNocrdCDU9dv5uhOh0sn2FT&limit=9&q=${this.query}`)
+          .get(`http://api.giphy.com/v1/gifs/search?api_key=V71aYiBc9MNocrdCDU9dv5uhOh0sn2FT&limit=12&q=${this.query}&offset=${this.offset}`)
           .then(this.handleGifData)
       }
     },
@@ -64,19 +73,25 @@ export default {
 
       if (data.length > 0) {
         this.current = this.query
-        this.gifs = data
+        this.gifs = this.gifs.concat(data)
       } else {
         this.noGifs = true
       }
     },
     toggleInputSize () {
       this.searching = !this.searching
+    },
+    loadMore () {
+      this.offset += 12
+      this.current ? this.getQueryGifs() : this.getTredningGifs()
     }
   },
   watch: {
     query () {
       if (!this.query) {
         this.noGifs = false
+        this.offset = 0
+        this.gifs = []
         this.getTredningGifs()
       }
     }
@@ -95,6 +110,7 @@ export default {
   color: #333;
   margin: 0 auto;
   max-width: 930px;
+  height: 100%;
 }
 
 h1 {
@@ -182,5 +198,16 @@ li {
 .error p {
   margin: 10px;
   font-size: 25px;
+}
+
+.load-more {
+  margin: 40px;
+  background: #333;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 25px;
+  border-radius: 3px;
+  padding: 10px 120px;
 }
 </style>
